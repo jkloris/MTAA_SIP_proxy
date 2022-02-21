@@ -48,8 +48,8 @@ rx_uri = re.compile("sip:([^@]*)@([^;>$]*)")
 rx_addr = re.compile("sip:([^ ;>$]*)")
 # rx_addrport = re.compile("([^:]*):(.*)")
 rx_code = re.compile("^SIP/2.0 ([^ ]*)")
-rx_invalid = re.compile("^192\.168")
-rx_invalid2 = re.compile("^10\.")
+# rx_invalid = re.compile("^192\.168")
+# rx_invalid2 = re.compile("^10\.")
 # rx_cseq = re.compile("^CSeq:")
 # rx_callid = re.compile("Call-ID: (.*)$")
 # rx_rr = re.compile("^Record-Route:")
@@ -205,7 +205,7 @@ class UDPHandler(socketserver.BaseRequestHandler):
             if line == "":
                 break
         data.append("")
-        text = string.join(data, "\r\n")
+        text = "\r\n".join(data).encode("utf-8")
         self.socket.sendto(text, self.client_address)
         showtime()
         logging.info("<<< %s" % data[0])
@@ -243,11 +243,11 @@ class UDPHandler(socketserver.BaseRequestHandler):
             if md:
                 header_expires = md.group(1)
 
-        if rx_invalid.search(contact) or rx_invalid2.search(contact):
-            if fromm in registrar:
-                del registrar[fromm]
-            self.sendResponse("488 Not Acceptable Here")
-            return
+        # if rx_invalid.search(contact) or rx_invalid2.search(contact):
+        #     if fromm in registrar:
+        #         del registrar[fromm]
+        #     self.sendResponse("488 Not Acceptable Here")
+        #     return
         if len(contact_expires) > 0:
             expires = int(contact_expires)
         elif len(header_expires) > 0:
@@ -287,7 +287,7 @@ class UDPHandler(socketserver.BaseRequestHandler):
                 data = self.removeRouteHeader()
                 # insert Record-Route
                 data.insert(1, recordroute)
-                text = string.join(data, "\r\n")
+                text = "\r\n".join(data).encode("utf-8")
                 socket.sendto(text, claddr)
                 showtime()
                 logging.info("<<< %s" % data[0])
@@ -311,7 +311,7 @@ class UDPHandler(socketserver.BaseRequestHandler):
                 data = self.removeRouteHeader()
                 # insert Record-Route
                 data.insert(1, recordroute)
-                text = string.join(data, "\r\n")
+                text = "\r\n".join(data).encode("utf-8")
                 socket.sendto(text, claddr)
                 showtime()
                 logging.info("<<< %s" % data[0])
@@ -335,7 +335,7 @@ class UDPHandler(socketserver.BaseRequestHandler):
                 data = self.removeRouteHeader()
                 # insert Record-Route
                 data.insert(1, recordroute)
-                text = string.join(data, "\r\n")
+                text = "\r\n".join(data).encode("utf-8")
                 socket.sendto(text, claddr)
                 showtime()
                 logging.info("<<< %s" % data[0])
@@ -353,7 +353,7 @@ class UDPHandler(socketserver.BaseRequestHandler):
                 socket, claddr = self.getSocketInfo(origin)
                 self.data = self.removeRouteHeader()
                 data = self.removeTopVia()
-                text = string.join(data, "\r\n")
+                text = "\r\n".join(data).encode("utf-8")
                 socket.sendto(text, claddr)
                 showtime()
                 logging.info("<<< %s" % data[0])
@@ -399,7 +399,7 @@ class UDPHandler(socketserver.BaseRequestHandler):
 
     def handle(self):
         # socket.setdefaulttimeout(120)
-        data = self.request[0]
+        data = self.request[0].decode("utf-8")
         self.data = data.split("\r\n")
         self.socket = self.request[1]
         request_uri = self.data[0]
