@@ -208,7 +208,7 @@ class UDPHandler(socketserver.BaseRequestHandler):
         text = "\r\n".join(data).encode("utf-8")
         self.socket.sendto(text, self.client_address)
         showtime()
-        logging.info("<<< %s" % data[0])
+        print("<<< %s" % data[0])
         logging.debug("---\n<< server send [%d]:\n%s\n---" % (len(text), text))
 
     def processRegister(self):
@@ -218,11 +218,11 @@ class UDPHandler(socketserver.BaseRequestHandler):
         header_expires = ""
         expires = 0
         validity = 0
-        authorization = ""
-        index = 0
-        auth_index = 0
-        data = []
-        size = len(self.data)
+        # authorization = ""
+        # index = 0
+        # auth_index = 0
+        # data = []
+        # size = len(self.data)
         for line in self.data:
             if rx_to.search(line) or rx_cto.search(line):
                 md = rx_uri.search(line)
@@ -262,7 +262,7 @@ class UDPHandler(socketserver.BaseRequestHandler):
             now = int(time.time())
             validity = now + expires
 
-        logging.info("From: %s - Contact: %s" % (fromm, contact))
+        print("From: %s - Contact: %s" % (fromm, contact))
         logging.debug("Client address: %s:%s" % self.client_address)
         logging.debug("Expires= %d" % expires)
         registrar[fromm] = [contact, self.socket, self.client_address, validity]
@@ -280,7 +280,7 @@ class UDPHandler(socketserver.BaseRequestHandler):
             return
         destination = self.getDestination()
         if len(destination) > 0:
-            logging.info("destination %s" % destination)
+            print("destination %s" % destination)
             if destination in registrar and self.checkValidity(destination):
                 socket, claddr = self.getSocketInfo(destination)
                 # self.changeRequestUri()
@@ -291,7 +291,7 @@ class UDPHandler(socketserver.BaseRequestHandler):
                 text = "\r\n".join(data).encode("utf-8")
                 socket.sendto(text, claddr)
                 showtime()
-                logging.info("<<< %s" % data[0])
+                print("<<< %s" % data[0])
                 logging.debug("---\n<< server send [%d]:\n%s\n---" % (len(text), text))
             else:
                 self.sendResponse("480 Temporarily Unavailable")
@@ -304,7 +304,7 @@ class UDPHandler(socketserver.BaseRequestHandler):
         logging.debug("--------------")
         destination = self.getDestination()
         if len(destination) > 0:
-            logging.info("destination %s" % destination)
+            print("destination %s" % destination)
             if destination in registrar:
                 socket, claddr = self.getSocketInfo(destination)
                 # self.changeRequestUri()
@@ -315,7 +315,7 @@ class UDPHandler(socketserver.BaseRequestHandler):
                 text = "\r\n".join(data).encode("utf-8")
                 socket.sendto(text, claddr)
                 showtime()
-                logging.info("<<< %s" % data[0])
+                print("<<< %s" % data[0])
                 logging.debug("---\n<< server send [%d]:\n%s\n---" % (len(text), text))
 
     def processNonInvite(self):
@@ -328,7 +328,7 @@ class UDPHandler(socketserver.BaseRequestHandler):
             return
         destination = self.getDestination()
         if len(destination) > 0:
-            logging.info("destination %s" % destination)
+            print("destination %s" % destination)
             if destination in registrar and self.checkValidity(destination):
                 socket, claddr = self.getSocketInfo(destination)
                 # self.changeRequestUri()
@@ -339,7 +339,7 @@ class UDPHandler(socketserver.BaseRequestHandler):
                 text = "\r\n".join(data).encode("utf-8")
                 socket.sendto(text, claddr)
                 showtime()
-                logging.info("<<< %s" % data[0])
+                print("<<< %s" % data[0])
                 logging.debug("---\n<< server send [%d]:\n%s\n---" % (len(text), text))
             else:
                 self.sendResponse("406 Not Acceptable")
@@ -357,7 +357,7 @@ class UDPHandler(socketserver.BaseRequestHandler):
                 text = "\r\n".join(data).encode("utf-8")
                 socket.sendto(text, claddr)
                 showtime()
-                logging.info("<<< %s" % data[0])
+                print("<<< %s" % data[0])
                 logging.debug("---\n<< server send [%d]:\n%s\n---" % (len(text), text))
 
     def processRequest(self):
@@ -406,7 +406,7 @@ class UDPHandler(socketserver.BaseRequestHandler):
         request_uri = self.data[0]
         if rx_request_uri.search(request_uri) or rx_code.search(request_uri):
             showtime()
-            logging.info(">>> %s" % request_uri)
+            print(">>> %s" % request_uri)
             logging.debug("---\n>> server received [%d]:\n%s\n---" % (len(data), data))
             logging.debug("Received from %s:%d" % self.client_address)
             self.processRequest()
@@ -421,13 +421,13 @@ class UDPHandler(socketserver.BaseRequestHandler):
 if __name__ == "__main__":
     logging.basicConfig(format='%(asctime)s:%(levelname)s:%(message)s', filename='proxy.log', level=logging.INFO,
                         datefmt='%H:%M:%S')
-    logging.info(time.strftime("%a, %d %b %Y %H:%M:%S ", time.localtime()))
+    print(time.strftime("%a, %d %b %Y %H:%M:%S ", time.localtime()))
     hostname = socket.gethostname()
-    logging.info(hostname)
+    print(hostname)
     ipaddress = socket.gethostbyname(hostname)
     if ipaddress == "127.0.0.1":
         ipaddress = sys.argv[1]
-    logging.info(ipaddress)
+    print(ipaddress)
     recordroute = "Record-Route: <sip:%s:%d;lr>" % (ipaddress, PORT)
     topvia = "Via: SIP/2.0/UDP %s:%d" % (ipaddress, PORT)
     server = socketserver.UDPServer((HOST, PORT), UDPHandler)
