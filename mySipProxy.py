@@ -5,12 +5,12 @@ import socket
 import sys
 import time
 import logging
-from sipfullproxy import UDPHandler
+from MTAA_SIPProxy.sipfullproxy import UDPHandler
 
-HOST, PORT = '0.0.0.0', 5060
+
 
 if __name__ == "__main__":
-
+    HOST, PORT = '0.0.0.0', 5060
     hostname = socket.gethostname()
     ipaddress = socket.gethostbyname(hostname)
 

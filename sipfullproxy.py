@@ -275,6 +275,7 @@ class UDPHandler(socketserver.BaseRequestHandler):
         logging.debug("-----------------")
         origin = self.getOrigin()
         if len(origin) == 0 or origin not in registrar:
+            print(origin, registrar)
             self.sendResponse("400 Bad Request")
             return
         destination = self.getDestination()
