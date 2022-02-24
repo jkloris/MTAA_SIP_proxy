@@ -206,6 +206,7 @@ class UDPHandler(socketserver.BaseRequestHandler):
                 break
         data.append("")
         text = "\r\n".join(data).encode("utf-8")
+
         self.socket.sendto(text, self.client_address)
         showtime()
         logging.info("<<< %s" % data[0])
@@ -291,14 +292,15 @@ class UDPHandler(socketserver.BaseRequestHandler):
                 text = "\r\n".join(data).encode("utf-8")
                 socket.sendto(text, claddr)
                 showtime()
-                logging.info("<<< %s" % data[0])
+                # logging.info("<<< %s" % data[0])
+
                 fromm = data[4].split(';')[0].replace('<','').replace('>','')
                 to = data[5].split(';')[0].replace('<','').replace('>','')
                 if data[9].find("Media change") > -1:
                     if data[-2].find("inactive") > -1:
-                        logging.warning(f"Requested Video Call OFF{fromm} >> {to}")
+                        logging.warning(f"\tRequested Video Call OFF {fromm} >> {to}")
                     else:
-                        logging.warning(f"Requested Video Call ON {fromm} >> {to}")
+                        logging.warning(f"\tRequested Video Call ON {fromm} >> {to}")
                 else:
                     logging.warning(f"Incomming Call {fromm} >> {to}")
 
@@ -365,9 +367,30 @@ class UDPHandler(socketserver.BaseRequestHandler):
                 self.data = self.removeRouteHeader()
                 data = self.removeTopVia()
                 text = "\r\n".join(data).encode("utf-8")
+
+
+                print(data)
+                # TODO : Hold call; Duplikovane spravy
+                if data[0].find("200") >-1:
+
+                    if data[5].find("BYE") > -1:
+                        logging.warning(f"\tCall Has Ended")
+
+                    elif len(data) >= 29 and data[29].find("video") > -1:
+                        onoff = int(data[29].split(" ")[1])
+                        if onoff > 0:
+                            logging.warning(f"\t\tVideo Call ON")
+                        else:
+                            logging.warning(f"\t\tVideo Call OFF")
+
+                    elif data[5].find("INVITE") > -1:
+                        logging.warning(f"\tCall Answered")
+                elif data[0].find("603") > -1:
+                    logging.warning(f"\tCall Declined")
+
                 socket.sendto(text, claddr)
                 showtime()
-                logging.info("<<< %s" % data[0])
+                # logging.info("<<< %s" % data[0])
                 # logging.debug("---\n<< server send [%d]:\n%s\n---" % (len(text), text))
 
     def processRequest(self):
