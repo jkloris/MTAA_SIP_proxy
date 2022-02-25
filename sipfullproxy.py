@@ -69,6 +69,10 @@ recordroute = ""
 topvia = ""
 registrar = {}
 
+def cleanName(msg):
+    adress = re.split(': |;', msg)
+    name = adress[1].replace('<','').replace('>','')
+    return name
 
 def hexdump(chars, sep, width):
     while chars:
@@ -206,6 +210,12 @@ class UDPHandler(socketserver.BaseRequestHandler):
                 break
         data.append("")
         text = "\r\n".join(data).encode("utf-8")
+
+
+
+        if code.find("200") > -1:
+            if data[4].find("SUBSCRIBE") > -1:
+                logging.warning(f"{cleanName(data[2])} Has Joind The Call")
 
         self.socket.sendto(text, self.client_address)
         showtime()
@@ -370,7 +380,7 @@ class UDPHandler(socketserver.BaseRequestHandler):
 
 
                 print(data)
-                # TODO : Hold call; Duplikovane spravy
+                # TODO : Hold call; Duplikovane spravy, data29 nie je vzdy video
                 if data[0].find("200") >-1:
 
                     if data[5].find("BYE") > -1:
