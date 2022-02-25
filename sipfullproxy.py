@@ -74,6 +74,11 @@ def cleanName(msg):
     name = adress[1].replace('<','').replace('>','')
     return name
 
+def getCallID(data):
+    for s in data:
+        if s.find("Call-ID") > -1:
+            return s
+
 def hexdump(chars, sep, width):
     while chars:
         line = chars[:width]
@@ -213,9 +218,9 @@ class UDPHandler(socketserver.BaseRequestHandler):
 
 
 
-        if code.find("200") > -1:
-            if data[4].find("SUBSCRIBE") > -1:
-                logging.warning(f"{cleanName(data[2])} Has Joind The Call")
+        # if code.find("200") > -1:
+        #     if data[4].find("SUBSCRIBE") > -1:
+        #         logging.warning(f"{cleanName(data[2])} Has Joind The Call")
 
         self.socket.sendto(text, self.client_address)
         showtime()
@@ -308,11 +313,11 @@ class UDPHandler(socketserver.BaseRequestHandler):
                 to = data[5].split(';')[0].replace('<','').replace('>','')
                 if data[9].find("Media change") > -1:
                     if data[-2].find("inactive") > -1:
-                        logging.warning(f"\tRequested Video Call OFF {fromm} >> {to}")
+                        logging.warning(f"\tRequested Video Call OFF {fromm} >> {to} ({getCallID(data)})")
                     else:
-                        logging.warning(f"\tRequested Video Call ON {fromm} >> {to}")
+                        logging.warning(f"\tRequested Video Call ON {fromm} >> {to} ({getCallID(data)})")
                 else:
-                    logging.warning(f"Incomming Call {fromm} >> {to}")
+                    logging.warning(f"Incomming Call {fromm} >> {to} ({getCallID(data)})")
 
                 # logging.debug("---\n<< server send [%d]:\n%s\n---" % (len(text), text))
             else:
@@ -379,24 +384,24 @@ class UDPHandler(socketserver.BaseRequestHandler):
                 text = "\r\n".join(data).encode("utf-8")
 
 
-                print(data)
+
                 # TODO : Hold call; Duplikovane spravy, data29 nie je vzdy video
                 if data[0].find("200") >-1:
 
                     if data[5].find("BYE") > -1:
-                        logging.warning(f"\tCall Has Ended")
+                        logging.warning(f"\tCall Has Ended ({getCallID(data)})")
 
                     elif len(data) >= 29 and data[29].find("video") > -1:
                         onoff = int(data[29].split(" ")[1])
                         if onoff > 0:
-                            logging.warning(f"\t\tVideo Call ON")
+                            logging.warning(f"\t\tVideo Call ON ({getCallID(data)})")
                         else:
-                            logging.warning(f"\t\tVideo Call OFF")
+                            logging.warning(f"\t\tVideo Call OFF ({getCallID(data)})")
 
                     elif data[5].find("INVITE") > -1:
-                        logging.warning(f"\tCall Answered")
+                        logging.warning(f"\tCall Answered by {cleanName(data[3])} ({getCallID(data)})")
                 elif data[0].find("603") > -1:
-                    logging.warning(f"\tCall Declined")
+                    logging.warning(f"\tCall Declined {cleanName(data[3])} ({getCallID(data)})")
 
                 socket.sendto(text, claddr)
                 showtime()

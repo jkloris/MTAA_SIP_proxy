@@ -7,7 +7,7 @@ import re
 
 if __name__ == "__main__":
 
-    logging.basicConfig(level=logging.WARNING, filename="zaznam-hovorov.log")
+    logging.basicConfig(level=logging.WARNING, filename="dennik-hovorov.log", format='%(asctime)s: %(message)s')
 
     HOST, PORT = '0.0.0.0', 5060
     hostname = socket.gethostname()
