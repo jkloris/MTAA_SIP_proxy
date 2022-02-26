@@ -15,10 +15,10 @@
 
 import socketserver
 import re
-import string
+# import string
 import socket
-# import threading
-import sys
+# # import threading
+# import sys
 import time
 import logging
 
@@ -68,6 +68,7 @@ rx_expires = re.compile("^Expires: (.*)$")
 recordroute = ""
 topvia = ""
 registrar = {}
+calls = {}
 
 def cleanName(msg):
     adress = re.split(': |;', msg)
@@ -78,6 +79,30 @@ def getCallID(data):
     for s in data:
         if s.find("Call-ID") > -1:
             return s
+
+# kontrola, ci sa sprava tyka videa a ci je to poziadavka o vypnutie alebo zapnutie videa
+# @return: -1 = nie je to video; 0 = vypnutie videa; > 0 = zapnutie videa
+def checkVideo(data):
+    if len(data) < 20:
+        return -1
+    for d in range(20,len(data)-1,1):
+        if data[d].find("video") > -1:
+            return int(data[d].split(" ")[1])
+    return -1
+
+# osetrenie duplikovania logov
+# @return: 1 = hovor povolenie zapisat prichadzajuci hovor; 2 = povolenie zapisat zdvihnuty hovor; 3 = povolenie zapisat zlozeny hovor; -1 = zakaz
+def checkNewCall(callID):
+    if callID not in calls:
+        # calls[callID] = 1
+        return 1
+    if calls[callID] == 1:
+        # calls[callID] = 2
+        return 2
+    if calls[callID] == 2:
+        # del calls[callID]
+        return 3
+    return -1
 
 def hexdump(chars, sep, width):
     while chars:
@@ -91,8 +116,8 @@ def quotechars(chars):
     return ''.join(['.', c][c.isalnum()] for c in chars)
 
 
-def showtime():
-    logging.debug(time.strftime("(%H:%M:%S)", time.localtime()))
+# def showtime():
+#     logging.debug(time.strftime("(%H:%M:%S)", time.localtime()))
 
 
 class UDPHandler(socketserver.BaseRequestHandler):
@@ -223,7 +248,7 @@ class UDPHandler(socketserver.BaseRequestHandler):
         #         logging.warning(f"{cleanName(data[2])} Has Joind The Call")
 
         self.socket.sendto(text, self.client_address)
-        showtime()
+        # showtime()
         logging.info("<<< %s" % data[0])
         # logging.debug("---\n<< server send [%d]:\n%s\n---" % (len(text), text))
 
@@ -306,18 +331,21 @@ class UDPHandler(socketserver.BaseRequestHandler):
                 data.insert(1, recordroute)
                 text = "\r\n".join(data).encode("utf-8")
                 socket.sendto(text, claddr)
-                showtime()
+                # showtime()
                 # logging.info("<<< %s" % data[0])
 
                 fromm = data[4].split(';')[0].replace('<','').replace('>','')
                 to = data[5].split(';')[0].replace('<','').replace('>','')
+                callID = getCallID(data)
                 if data[9].find("Media change") > -1:
                     if data[-2].find("inactive") > -1:
-                        logging.warning(f"\tRequested Video Call OFF {fromm} >> {to} ({getCallID(data)})")
+                        logging.warning(f"\tRequested Video Call OFF {fromm} >> {to} ({callID})")
                     else:
-                        logging.warning(f"\tRequested Video Call ON {fromm} >> {to} ({getCallID(data)})")
-                else:
-                    logging.warning(f"Incomming Call {fromm} >> {to} ({getCallID(data)})")
+                        logging.warning(f"\tRequested Video Call ON {fromm} >> {to} ({callID})")
+                elif checkNewCall(getCallID(data)) == 1:
+                    calls[callID] = 1
+                    logging.warning(f"Incomming Call {fromm} >> {to} ({callID})")
+
 
                 # logging.debug("---\n<< server send [%d]:\n%s\n---" % (len(text), text))
             else:
@@ -341,7 +369,7 @@ class UDPHandler(socketserver.BaseRequestHandler):
                 data.insert(1, recordroute)
                 text = "\r\n".join(data).encode("utf-8")
                 socket.sendto(text, claddr)
-                showtime()
+                # showtime()
                 logging.info("<<< %s" % data[0])
                 # logging.debug("---\n<< server send [%d]:\n%s\n---" % (len(text), text))
 
@@ -365,7 +393,7 @@ class UDPHandler(socketserver.BaseRequestHandler):
                 data.insert(1, recordroute)
                 text = "\r\n".join(data).encode("utf-8")
                 socket.sendto(text, claddr)
-                showtime()
+                # showtime()
                 logging.info("<<< %s" % data[0])
                 # logging.debug("---\n<< server send [%d]:\n%s\n---" % (len(text), text))
             else:
@@ -385,31 +413,36 @@ class UDPHandler(socketserver.BaseRequestHandler):
 
 
 
-                # TODO : Hold call; Duplikovane spravy, data29 nie je vzdy video
+                # TODO : Duplikovane spravy
+                # z prednasky: "server odpovedal 2x tou istou spravou, co je nestandardne, ale byva zvykom, že veci su nestandardne.." - asi neriesit
+
+                callID = getCallID(data)
                 if data[0].find("200") >-1:
 
-                    if data[5].find("BYE") > -1:
-                        logging.warning(f"\tCall Has Ended ({getCallID(data)})")
+                    if data[5].find("BYE") > -1 and checkNewCall(callID) == 3:
+                        del calls[callID]
+                        logging.warning(f"\tCall Has Ended ({callID})")
 
-                    elif len(data) >= 29 and data[29].find("video") > -1:
-                        onoff = int(data[29].split(" ")[1])
+                    elif (onoff := checkVideo(data)) >= 0:
                         if onoff > 0:
-                            logging.warning(f"\t\tVideo Call ON ({getCallID(data)})")
+                            logging.warning(f"\t\tVideo Call ON ({callID})")
                         else:
-                            logging.warning(f"\t\tVideo Call OFF ({getCallID(data)})")
+                            logging.warning(f"\t\tVideo Call OFF ({callID})")
 
-                    elif data[5].find("INVITE") > -1:
-                        logging.warning(f"\tCall Answered by {cleanName(data[3])} ({getCallID(data)})")
+                    elif data[5].find("INVITE") > -1 and checkNewCall(callID) == 2:
+                        calls[callID] = 2
+                        logging.warning(f"\tCall Answered by {cleanName(data[3])} ({callID})")
                 elif data[0].find("603") > -1:
-                    logging.warning(f"\tCall Declined {cleanName(data[3])} ({getCallID(data)})")
+                    logging.warning(f"\tCall Declined by {cleanName(data[3])} ({callID})")
 
                 socket.sendto(text, claddr)
-                showtime()
+                # showtime()
                 # logging.info("<<< %s" % data[0])
                 # logging.debug("---\n<< server send [%d]:\n%s\n---" % (len(text), text))
 
     def processRequest(self):
         # logging.info "processRequest"
+
         if len(self.data) > 0:
             request_uri = self.data[0]
             if rx_register.search(request_uri):
@@ -453,14 +486,14 @@ class UDPHandler(socketserver.BaseRequestHandler):
         self.socket = self.request[1]
         request_uri = self.data[0]
         if rx_request_uri.search(request_uri) or rx_code.search(request_uri):
-            showtime()
-            logging.info(">>> %s" % request_uri)
+            # showtime()
+            # logging.info(">>> %s" % request_uri)
             # logging.debug("---\n>> server received [%d]:\n%s\n---" % (len(data), data))
             # logging.debug("Received from %s:%d" % self.client_address)
             self.processRequest()
         else:
             if len(data) > 4:
-                showtime()
+                # showtime()
                 # logging.warning("---\n>> server received [%d]:" % len(data))
                 hexdump(data, ' ', 16)
                 # logging.warning("---")

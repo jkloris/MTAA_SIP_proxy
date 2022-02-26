@@ -3,10 +3,7 @@ import socketserver
 import socket
 import logging
 
-import re
-
 if __name__ == "__main__":
-
     logging.basicConfig(level=logging.WARNING, filename="dennik-hovorov.log", format='%(asctime)s: %(message)s')
 
     HOST, PORT = '0.0.0.0', 5060
