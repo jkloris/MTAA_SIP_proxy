@@ -17,8 +17,8 @@ import socketserver
 import re
 # import string
 import socket
-# # import threading
-# import sys
+# import threading
+import sys
 import time
 import logging
 
@@ -125,7 +125,7 @@ class UDPHandler(socketserver.BaseRequestHandler):
     def debugRegister(self):
         # logging.debug("*** REGISTRAR ***")
         # logging.debug("*****************")
-        for key in list(registrar.keys()):
+        for key in registrar.keys():
             logging.debug("%s -> %s" % (key, registrar[key][0]))
         # logging.debug("*****************")
 
@@ -240,12 +240,6 @@ class UDPHandler(socketserver.BaseRequestHandler):
                 break
         data.append("")
         text = "\r\n".join(data).encode("utf-8")
-
-
-
-        # if code.find("200") > -1:
-        #     if data[4].find("SUBSCRIBE") > -1:
-        #         logging.warning(f"{cleanName(data[2])} Has Joind The Call")
 
         self.socket.sendto(text, self.client_address)
         # showtime()
@@ -370,7 +364,7 @@ class UDPHandler(socketserver.BaseRequestHandler):
                 text = "\r\n".join(data).encode("utf-8")
                 socket.sendto(text, claddr)
                 # showtime()
-                logging.info("<<< %s" % data[0])
+                # logging.info("<<< %s" % data[0])
                 # logging.debug("---\n<< server send [%d]:\n%s\n---" % (len(text), text))
 
     def processNonInvite(self):
@@ -394,7 +388,7 @@ class UDPHandler(socketserver.BaseRequestHandler):
                 text = "\r\n".join(data).encode("utf-8")
                 socket.sendto(text, claddr)
                 # showtime()
-                logging.info("<<< %s" % data[0])
+                # logging.info("<<< %s" % data[0])
                 # logging.debug("---\n<< server send [%d]:\n%s\n---" % (len(text), text))
             else:
                 self.sendResponse("406 Absolutne neakceptovatelne")
@@ -411,10 +405,7 @@ class UDPHandler(socketserver.BaseRequestHandler):
                 data = self.removeTopVia()
                 text = "\r\n".join(data).encode("utf-8")
 
-
-
-                # TODO : Duplikovane spravy
-                # z prednasky: "server odpovedal 2x tou istou spravou, co je nestandardne, ale byva zvykom, že veci su nestandardne.." - asi neriesit
+                socket.sendto(text, claddr)
 
                 callID = getCallID(data)
                 if data[0].find("200") >-1:
@@ -435,7 +426,7 @@ class UDPHandler(socketserver.BaseRequestHandler):
                 elif data[0].find("603") > -1:
                     logging.warning(f"\tCall Declined by {cleanName(data[3])} ({callID})")
 
-                socket.sendto(text, claddr)
+
                 # showtime()
                 # logging.info("<<< %s" % data[0])
                 # logging.debug("---\n<< server send [%d]:\n%s\n---" % (len(text), text))
@@ -476,8 +467,8 @@ class UDPHandler(socketserver.BaseRequestHandler):
             elif rx_code.search(request_uri):
                 self.processCode()
             else:
-                # logging.error("request_uri %s" % request_uri)
-                logging.info("message %s unknown" % self.data)
+                logging.error("request_uri %s" % request_uri)
+                # logging.info("message %s unknown" % self.data)
 
     def handle(self):
         # socket.setdefaulttimeout(120)
